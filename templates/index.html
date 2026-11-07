@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080b12">
+    <title>Stars — Personal AI</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #080b12;
+            --sidebar: #0c1019;
+            --surface: #111722;
+            --surface-hover: #1a2230;
+            --text: #edf0f7;
+            --muted: #8e98aa;
+            --accent: #a78bfa;
+            --border: rgba(167, 179, 199, 0.13);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+        }
+        button, textarea { font: inherit; }
+        button { color: inherit; }
+        .app {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+        .sidebar {
+            width: 278px;
+            flex: 0 0 278px;
+            display: flex;
+            flex-direction: column;
+            padding: 18px 12px 14px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 2px 10px 24px;
+            color: #f0ebff;
+            font-size: 1.15rem;
+            font-weight: 750;
+            letter-spacing: 0.11em;
+        }
+        .brand-mark {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            border-radius: 10px;
+            background: rgba(139, 92, 246, 0.12);
+            color: #c4b5fd;
+            font-size: 1.1rem;
+        }
+        .new-chat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            height: 43px;
+            border: 1px solid rgba(167, 179, 199, 0.18);
+            border-radius: 10px;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .new-chat:hover, .history-item:hover { background: var(--surface-hover); }
+        .section-label {
+            margin: 27px 9px 10px;
+            color: #778194;
+            font-size: 0.69rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+        }
+        .history-item {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            padding: 10px 11px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #c4cad5;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 0.84rem;
+        }
+        .history-item.active { background: var(--surface-hover); color: #fff; }
+        .delete-chat {
+            width: 31px;
+            height: 31px;
+            flex: 0 0 31px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #7d8798;
+            cursor: pointer;
+            opacity: 0;
+        }
+        .history-row:hover .delete-chat, .delete-chat:focus-visible { opacity: 1; }
+        .delete-chat:hover { background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
+        .sidebar-footer {
+            padding: 12px 9px 2px;
+            color: #778194;
+            font-size: 0.73rem;
+            line-height: 1.5;
+        }
+        .main {
+            display: flex;
+            min-width: 0;
+            flex: 1;
+            flex-direction: column;
+        }
+        .topbar {
+            height: 62px;
+            flex: 0 0 62px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 25px;
+            border-bottom: 1px solid var(--border);
+        }
+        .mobile-menu {
+            display: none;
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+        }
+        .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+        .model-pill {
+            margin-left: auto;
+            padding: 6px 9px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b7c0d0;
+            font-size: 0.71rem;
+        }
+        .star-stage {
+            position: relative;
+            display: grid;
+            height: 190px;
+            flex: 0 0 190px;
+            place-items: center;
+            overflow: hidden;
+            background: radial-gradient(ellipse at 50% 70%, rgba(107, 76, 195, 0.13), transparent 48%);
+            transition: height 0.35s ease, flex-basis 0.35s ease;
+        }
+        .star-stage::before, .star-stage::after {
+            position: absolute;
+            width: 270px;
+            height: 270px;
+            border: 1px solid rgba(187, 165, 255, 0.1);
+            border-radius: 50%;
+            content: "";
+            animation: orbit 18s linear infinite;
+        }
+        .star-stage::after {
+            width: 220px;
+            height: 220px;
+            border-color: rgba(99, 174, 255, 0.11);
+            animation-direction: reverse;
+            animation-duration: 13s;
+        }
+        .star-orb {
+            position: relative;
+            z-index: 1;
+            width: 132px;
+            height: 132px;
+            border: 1px solid rgba(223, 212, 255, 0.75);
+            border-radius: 50%;
+            background:
+                radial-gradient(ellipse at 35% 22%, rgba(255,255,255,0.98) 0%, rgba(215,204,255,0.95) 7%, transparent 28%),
+                radial-gradient(ellipse at 68% 76%, rgba(81, 115, 222, 0.9), transparent 47%),
+                radial-gradient(ellipse at 44% 42%, #c4b5fd 0%, #8e75ed 43%, #473a9a 77%, #24205a 100%);
+            box-shadow:
+                inset -15px -18px 30px rgba(13, 14, 53, 0.6),
+                inset 8px 8px 20px rgba(255, 255, 255, 0.32),
+                0 0 32px rgba(151, 123, 255, 0.48),
+                0 0 85px rgba(98, 79, 205, 0.25);
+            animation: float 4s ease-in-out infinite;
+            transition: transform 0.18s ease-out, box-shadow 0.3s ease;
+            will-change: transform;
+        }
+        .star-orb::before, .star-orb::after {
+            position: absolute;
+            top: 26px;
+            width: 16px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.88);
+            content: "";
+            filter: blur(1px);
+        }
+        .star-orb::before { left: 23px; transform: rotate(-35deg); }
+        .star-orb::after { top: 41px; right: 15px; width: 8px; height: 8px; opacity: 0.65; }
+        .orb-face {
+            position: absolute;
+            inset: 0;
+            transform: translate(var(--face-x, 0px), var(--face-y, 0px));
+            transition: transform 0.16s ease-out;
+        }
+        .orb-eye {
+            position: absolute;
+            top: 54px;
+            width: 17px;
+            height: 12px;
+            overflow: hidden;
+            border-bottom: 2px solid rgba(41, 31, 88, 0.92);
+            border-radius: 50%;
+            transform: rotate(-7deg);
+        }
+        .orb-eye.left { left: 34px; }
+        .orb-eye.right { right: 34px; transform: rotate(7deg); }
+        .orb-pupil {
+            position: absolute;
+            left: 6px;
+            bottom: 1px;
+            width: 6px;
+            height: 7px;
+            border-radius: 50%;
+            background: #292052;
+            box-shadow: 0 0 5px rgba(255,255,255,0.36);
+            transform: translate(var(--pupil-x, 0px), var(--pupil-y, 0px));
+        }
+        .orb-blush {
+            position: absolute;
+            top: 72px;
+            width: 18px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 143, 191, 0.5);
+            filter: blur(4px);
+        }
+        .orb-blush.left { left: 23px; }
+        .orb-blush.right { right: 23px; }
+        .orb-mouth {
+            position: absolute;
+            top: 74px;
+            left: 58px;
+            width: 16px;
+            height: 9px;
+            border-bottom: 2px solid rgba(59, 35, 101, 0.95);
+            border-radius: 0 0 50% 50%;
+            transition: height 0.12s ease, border-radius 0.12s ease;
+        }
+        .star-orb.speaking {
+            box-shadow:
+                inset -15px -18px 30px rgba(13, 14, 53, 0.52),
+                inset 8px 8px 20px rgba(255, 255, 255, 0.38),
+                0 0 42px rgba(177, 152, 255, 0.75),
+                0 0 105px rgba(111, 92, 238, 0.46);
+            animation: float 2.4s ease-in-out infinite, pulse 0.85s ease-in-out infinite alternate;
+        }
+        .star-orb.speaking .orb-mouth {
+            top: 73px;
+            height: 12px;
+            border: 2px solid rgba(59, 35, 101, 0.95);
+            border-top: 0;
+            border-radius: 0 0 50% 50%;
+        }
+        .star-stage.has-messages { height: 142px; flex-basis: 142px; }
+        .star-stage.has-messages .star-orb { transform: scale(0.82); }
+        .voice-button {
+            position: absolute;
+            z-index: 2;
+            top: 14px;
+            right: 22px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 11px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(17, 23, 34, 0.82);
+            color: #b9c1d0;
+            cursor: pointer;
+            font-size: 0.72rem;
+            backdrop-filter: blur(10px);
+        }
+        .voice-button:hover, .voice-button[aria-pressed="true"] {
+            border-color: rgba(167, 139, 250, 0.48);
+            background: rgba(93, 73, 153, 0.27);
+            color: #e2d9ff;
+        }
+        @keyframes float {
+            0%, 100% { margin-top: 0; }
+            50% { margin-top: -9px; }
+        }
+        @keyframes orbit { to { transform: rotate(360deg); } }
+        @keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.13); } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
+        .chat {
+            width: min(100%, 850px);
+            flex: 1;
+            align-self: center;
+            overflow-y: auto;
+            padding: 28px 30px 24px;
+            scroll-behavior: smooth;
+        }
+        .welcome {
+            display: flex;
+            min-height: min(55vh, 500px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .welcome-icon {
+            display: grid;
+            width: 58px;
+            height: 58px;
+            place-items: center;
+            margin-bottom: 18px;
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            border-radius: 19px;
+            background: linear-gradient(145deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1));
+            color: #c4b5fd;
+            font-size: 1.8rem;
+        }
+        .welcome h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 3vw, 2.2rem); letter-spacing: -0.035em; }
+        .welcome p { max-width: 420px; margin: 0; color: var(--muted); line-height: 1.6; }
+        .message {
+            display: flex;
+            gap: 13px;
+            margin: 0 0 27px;
+            line-height: 1.7;
+        }
+        .avatar {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            place-items: center;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            color: #c4b5fd;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .message.user .avatar { background: #192b2b; color: #7dd3c7; }
+        .message.error .avatar { background: #321b21; color: #fca5a5; }
+        .message-content { min-width: 0; flex: 1; padding-top: 2px; }
+        .message-name { margin-bottom: 4px; color: #d3d8e2; font-size: 0.79rem; font-weight: 700; }
+        .message-text { color: #dce1ea; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .message.error .message-text { color: #fca5a5; }
+        .composer-area {
+            width: min(100%, 850px);
+            align-self: center;
+            padding: 0 30px 22px;
+        }
+        .composer {
+            padding: 9px 10px 8px 16px;
+            border: 1px solid rgba(167, 179, 199, 0.22);
+            border-radius: 17px;
+            background: #111722;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+        }
+        .composer:focus-within { border-color: rgba(167, 139, 250, 0.62); }
+        .composer-row { display: flex; align-items: flex-end; gap: 10px; }
+        textarea {
+            min-width: 0;
+            min-height: 42px;
+            max-height: 180px;
+            flex: 1;
+            resize: none;
+            padding: 11px 0 8px;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: var(--text);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        textarea::placeholder { color: #7f899a; }
+        .icon-button, .send-button {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            border: 0;
+            border-radius: 11px;
+            cursor: pointer;
+        }
+        .icon-button { background: transparent; color: #aab3c2; }
+        .icon-button:hover { background: var(--surface-hover); color: #fff; }
+        .send-button { background: #c4b5fd; color: #181126; font-size: 1.2rem; font-weight: 800; }
+        .send-button:hover { background: #ddd6fe; }
+        button:disabled { opacity: 0.48; cursor: not-allowed; }
+        .composer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 5px;
+            color: #778194;
+            font-size: 0.69rem;
+        }
+        .status { min-height: 16px; }
+        @media (max-width: 760px) {
+            .sidebar {
+                position: fixed;
+                z-index: 3;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                box-shadow: 18px 0 45px rgba(0, 0, 0, 0.38);
+            }
+            .sidebar.open { transform: translateX(0); }
+            .mobile-menu { display: grid; place-items: center; }
+            .topbar { padding: 0 14px; }
+            .chat { padding: 24px 18px; }
+            .composer-area { padding: 0 14px 14px; }
+            .delete-chat { opacity: 1; }
+            .model-pill { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside id="sidebar" class="sidebar">
+            <div class="brand"><span class="brand-mark">✦</span> STARS</div>
+            <button id="newChatBtn" class="new-chat" type="button"><span>＋</span> Chat baru</button>
+            <div class="section-label">Riwayat</div>
+            <nav id="historyList" class="history-list" aria-label="Riwayat percakapan"></nav>
+            <div class="sidebar-footer">Riwayat disimpan hanya di browser ini.</div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <button id="menuBtn" class="mobile-menu" type="button" aria-label="Buka menu">☰</button>
+                <div id="chatTitle" class="chat-title">Chat baru</div>
+                <div class="model-pill">✦ &nbsp; Stars AI</div>
+            </header>
+            <section id="starStage" class="star-stage" aria-label="Bintang Stars yang mengikuti kursor">
+                <div id="starOrb" class="star-orb" role="img" aria-label="Bola bintang animasi dengan wajah">
+                    <div class="orb-face">
+                        <span class="orb-eye left"><span class="orb-pupil"></span></span>
+                        <span class="orb-eye right"><span class="orb-pupil"></span></span>
+                        <span class="orb-blush left"></span>
+                        <span class="orb-blush right"></span>
+                        <span class="orb-mouth"></span>
+                    </div>
+                </div>
+                <button id="voiceBtn" class="voice-button" type="button" aria-pressed="false" title="Aktifkan suara Stars">
+                    <span aria-hidden="true">♫</span><span id="voiceLabel">Aktifkan suara</span>
+                </button>
+            </section>
+            <div id="chat" class="chat" aria-live="polite"></div>
+            <div class="composer-area">
+                <div class="composer">
+                    <div class="composer-row">
+                        <textarea id="input" rows="1" aria-label="Pesan" placeholder="Kirim pesan ke Stars..."></textarea>
+                        <button id="micBtn" class="icon-button" type="button" aria-label="Gunakan mikrofon" title="Gunakan mikrofon">🎙</button>
+                        <button id="sendBtn" class="send-button" type="button" aria-label="Kirim pesan">↑</button>
+                    </div>
+                    <div class="composer-bottom">
+                        <span id="status" class="status">Enter untuk mengirim · Shift+Enter untuk baris baru</span>
+                        <span>Periksa jawaban AI untuk hal penting.</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const storageKey = 'stars.web.conversations.v1';
+        const chatEl = document.getElementById('chat');
+        const inputEl = document.getElementById('input');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusEl = document.getElementById('status');
+        const micBtn = document.getElementById('micBtn');
+        const historyList = document.getElementById('historyList');
+        const sidebar = document.getElementById('sidebar');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const starStage = document.getElementById('starStage');
+        const starOrb = document.getElementById('starOrb');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceLabel = document.getElementById('voiceLabel');
+        const messages = [];
+        let conversations = loadConversations();
+        let activeChatId = conversations[0]?.id || null;
+        let busy = false;
+        let lastError = '';
+        let voiceEnabled = localStorage.getItem('stars.web.voice.v1') === 'true';
+        let availableVoices = [];
+
+        function loadConversations() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                if (!Array.isArray(stored)) return [];
+                return stored
+                    .filter((chat) => chat && typeof chat.id === 'string' && Array.isArray(chat.messages))
+                    .map((chat) => ({
+                        id: chat.id,
+                        title: typeof chat.title === 'string' ? chat.title : 'Chat baru',
+                        updatedAt: Number(chat.updatedAt) || Date.now(),
+                        messages: chat.messages
+                            .filter((message) => message && ['user', 'assistant'].includes(message.role) && typeof message.content === 'string')
+                            .slice(-200)
+                    }))
+                    .slice(0, 50)
+                    .sort((a, b) => b.updatedAt - a.updatedAt);
+            } catch (error) {
+                setStatus('Riwayat browser tidak dapat dibaca.');
+                return [];
+            }
+        }
+
+        function saveConversations() {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(conversations.slice(0, 50)));
+                return true;
+            } catch (error) {
+                setStatus('Riwayat tidak dapat disimpan. Periksa ruang penyimpanan browser.');
+                return false;
+            }
+        }
+
+        function currentChat() {
+            return conversations.find((chat) => chat.id === activeChatId);
+        }
+
+        function setStatus(text) {
+            statusEl.textContent = text;
+        }
+
+        function updateVoiceButton() {
+            voiceBtn.setAttribute('aria-pressed', String(voiceEnabled));
+            voiceBtn.title = voiceEnabled ? 'Matikan suara Stars' : 'Aktifkan suara Stars';
+            voiceLabel.textContent = voiceEnabled ? 'Suara aktif' : 'Aktifkan suara';
+        }
+
+        function findIndonesianVoice() {
+            const indonesianVoices = availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith('id'));
+            return indonesianVoices.find((voice) => /female|gadis|perempuan|siti/i.test(voice.name))
+                || indonesianVoices[0]
+                || null;
+        }
+
+        function speakText(text) {
+            if (!voiceEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.94;
+            utterance.pitch = 1.08;
+            const voice = findIndonesianVoice();
+            if (voice) {
+                utterance.voice = voice;
+                utterance.lang = voice.lang;
+            }
+            starOrb.classList.add('speaking');
+            utterance.onend = () => starOrb.classList.remove('speaking');
+            utterance.onerror = () => starOrb.classList.remove('speaking');
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function createChat() {
+            const id = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            const chat = {
+                id,
+                title: 'Chat baru',
+                updatedAt: Date.now(),
+                messages: []
+            };
+            conversations.unshift(chat);
+            conversations = conversations.slice(0, 50);
+            activeChatId = id;
+            lastError = '';
+            saveConversations();
+            renderAll();
+            inputEl.focus();
+            sidebar.classList.remove('open');
+        }
+
+        function renderHistory() {
+            historyList.replaceChildren();
+            conversations.forEach((conversation) => {
+                const row = document.createElement('div');
+                row.className = 'history-row';
+                const selectButton = document.createElement('button');
+                selectButton.type = 'button';
+                selectButton.className = `history-item${conversation.id === activeChatId ? ' active' : ''}`;
+                selectButton.textContent = conversation.title;
+                selectButton.title = conversation.title;
+                selectButton.disabled = busy;
+                selectButton.addEventListener('click', () => {
+                    activeChatId = conversation.id;
+                    lastError = '';
+                    renderAll();
+                    sidebar.classList.remove('open');
+                });
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'delete-chat';
+                deleteButton.textContent = '×';
+                deleteButton.setAttribute('aria-label', `Hapus ${conversation.title}`);
+                deleteButton.title = 'Hapus chat';
+                deleteButton.disabled = busy;
+                deleteButton.addEventListener('click', () => deleteChat(conversation.id));
+                row.append(selectButton, deleteButton);
+                historyList.appendChild(row);
+            });
+        }
+
+        function renderMessages() {
+            chatEl.replaceChildren();
+            const conversation = currentChat();
+            const hasUserMessages = Boolean(conversation?.messages.some((message) => message.role === 'user'));
+            starStage.classList.toggle('has-messages', hasUserMessages);
+            if (!conversation || !conversation.messages.some((message) => message.role === 'user')) {
+                const welcome = document.createElement('div');
+                welcome.className = 'welcome';
+                const heading = document.createElement('h1');
+                heading.textContent = 'Halo, aku Stars.';
+                const description = document.createElement('p');
+                description.textContent = 'Senang bertemu denganmu. Apa yang bisa kubantu hari ini?';
+                welcome.append(heading, description);
+                chatEl.appendChild(welcome);
+            }
+            if (!conversation) return;
+
+            conversation.messages.forEach((message) => {
+                const row = document.createElement('div');
+                row.className = `message ${message.role}`;
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar';
+                avatar.textContent = message.role === 'user' ? 'K' : '✦';
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                const name = document.createElement('div');
+                name.className = 'message-name';
+                name.textContent = message.role === 'user' ? 'Kamu' : 'Stars';
+                const text = document.createElement('div');
+                text.className = 'message-text';
+                text.textContent = message.content;
+                content.append(name, text);
+                row.append(avatar, content);
+                chatEl.appendChild(row);
+            });
+            if (lastError) {
+                const row = document.createElement('div');
+                row.className = 'message error';
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar';
+                avatar.textContent = '!';
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                const name = document.createElement('div');
+                name.className = 'message-name';
+                name.textContent = 'Terjadi kesalahan';
+                const text = document.createElement('div');
+                text.className = 'message-text';
+                text.textContent = lastError;
+                content.append(name, text);
+                row.append(avatar, content);
+                chatEl.appendChild(row);
+            }
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        function renderAll() {
+            const conversation = currentChat();
+            document.getElementById('chatTitle').textContent = conversation?.title || 'Chat baru';
+            renderHistory();
+            renderMessages();
+        }
+
+        function updateTitle(conversation) {
+            if (conversation.title !== 'Chat baru') return;
+            const firstUserMessage = conversation.messages.find((message) => message.role === 'user');
+            if (firstUserMessage) {
+                conversation.title = firstUserMessage.content.replace(/\s+/g, ' ').slice(0, 42);
+                if (firstUserMessage.content.length > 42) conversation.title += '…';
+            }
+        }
+
+        function deleteChat(id) {
+            if (busy) return;
+            conversations = conversations.filter((chat) => chat.id !== id);
+            lastError = '';
+            if (activeChatId === id) activeChatId = conversations[0]?.id || null;
+            if (!activeChatId) {
+                createChat();
+                return;
+            }
+            saveConversations();
+            renderAll();
+        }
+
+        async function sendMessage() {
+            const text = inputEl.value.trim();
+            if (!text || busy) return;
+            if (!activeChatId) createChat();
+            const conversation = currentChat();
+            if (!conversation) return;
+
+            conversation.messages.push({ role: 'user', content: text });
+            conversation.updatedAt = Date.now();
+            lastError = '';
+            updateTitle(conversation);
+            inputEl.value = '';
+            saveConversations();
+            renderAll();
+            busy = true;
+            sendBtn.disabled = true;
+            newChatBtn.disabled = true;
+            setStatus('Stars sedang berpikir...');
+            renderHistory();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: conversation.messages })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Permintaan gagal.');
+                if (typeof data.answer !== 'string' || !data.answer.trim()) {
+                    throw new Error('Stars mengembalikan jawaban kosong.');
+                }
+                conversation.messages.push({ role: 'assistant', content: data.answer.trim() });
+                conversation.updatedAt = Date.now();
+                conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+                saveConversations();
+                setStatus('Enter untuk mengirim · Shift+Enter untuk baris baru');
+                speakText(data.answer.trim());
+            } catch (error) {
+                lastError = error instanceof TypeError
+                    ? `Tidak bisa terhubung ke server Stars di ${window.location.origin}. Jalankan Jalankan Stars Web.bat dan biarkan jendela server tetap terbuka.`
+                    : error.message || 'Permintaan tidak berhasil.';
+                setStatus(error instanceof TypeError
+                    ? 'Server Stars tidak dapat dijangkau.'
+                    : 'Periksa API key dan konfigurasi endpoint.');
+            } finally {
+                busy = false;
+                sendBtn.disabled = false;
+                newChatBtn.disabled = false;
+                renderHistory();
+                inputEl.focus();
+            }
+            renderMessages();
+        }
+
+        newChatBtn.addEventListener('click', () => {
+            if (!busy) createChat();
+        });
+        sendBtn.addEventListener('click', sendMessage);
+        inputEl.addEventListener('input', () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = `${Math.min(inputEl.scrollHeight, 180)}px`;
+        });
+        inputEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        if ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window) {
+            availableVoices = window.speechSynthesis.getVoices();
+            window.speechSynthesis.addEventListener('voiceschanged', () => {
+                availableVoices = window.speechSynthesis.getVoices();
+            });
+            voiceBtn.addEventListener('click', () => {
+                voiceEnabled = !voiceEnabled;
+                localStorage.setItem('stars.web.voice.v1', String(voiceEnabled));
+                updateVoiceButton();
+                if (voiceEnabled) {
+                    speakText('Halo, aku Stars. Senang bertemu denganmu. Apa yang bisa kubantu hari ini?');
+                    setStatus('Suara Stars aktif. Jawaban akan dibacakan.');
+                } else {
+                    window.speechSynthesis.cancel();
+                    starOrb.classList.remove('speaking');
+                    setStatus('Suara Stars dimatikan.');
+                }
+            });
+        } else {
+            voiceBtn.disabled = true;
+            voiceBtn.title = 'Browser ini tidak mendukung suara sintetis';
+            voiceLabel.textContent = 'Suara tidak tersedia';
+        }
+
+        document.addEventListener('pointermove', (event) => {
+            const bounds = starOrb.getBoundingClientRect();
+            const centerX = bounds.left + bounds.width / 2;
+            const centerY = bounds.top + bounds.height / 2;
+            const dx = Math.max(-1, Math.min(1, (event.clientX - centerX) / (window.innerWidth / 2)));
+            const dy = Math.max(-1, Math.min(1, (event.clientY - centerY) / (window.innerHeight / 2)));
+            const faceX = `${dx * 5}px`;
+            const faceY = `${dy * 4}px`;
+            starOrb.style.setProperty('--face-x', faceX);
+            starOrb.style.setProperty('--face-y', faceY);
+            starOrb.style.transform = `translate(${dx * 3}px, ${dy * 2}px) scale(${starStage.classList.contains('has-messages') ? 0.82 : 1})`;
+            starOrb.style.setProperty('--pupil-x', `${dx * 3}px`);
+            starOrb.style.setProperty('--pupil-y', `${dy * 2}px`);
+        });
+
+        updateVoiceButton();
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = false;
+            recognition.onresult = (event) => {
+                inputEl.value = event.results[0][0].transcript;
+                inputEl.dispatchEvent(new Event('input'));
+                setStatus('Mikrofon menangkap ucapan. Tekan Enter untuk mengirim.');
+            };
+            recognition.onerror = () => setStatus('Tidak bisa membaca suara dari mikrofon.');
+            recognition.onend = () => { micBtn.textContent = '🎙'; };
+        } else {
+            micBtn.disabled = true;
+            micBtn.title = 'Browser ini tidak mendukung pengenalan suara';
+        }
+        micBtn.addEventListener('click', () => {
+            if (!recognition) return;
+            try {
+                micBtn.textContent = '⏹';
+                setStatus('Mikrofon aktif. Silakan bicara.');
+                recognition.start();
+            } catch (error) {
+                setStatus('Mikrofon sedang digunakan. Tunggu sebentar lalu coba lagi.');
+            }
+        });
+
+        if (!activeChatId) createChat();
+        else renderAll();
+        inputEl.focus();
+    </script>
+</body>
+</html>

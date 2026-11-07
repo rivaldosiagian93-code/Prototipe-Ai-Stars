@@ -1,0 +1,2 @@
+SpeechRecognition[audio]>=3.14.0
+Flask>=3.0.0
