@@ -1,4 +1,6 @@
-# Stars
+# Prototipe-Ai-Stars
+
+AI yang bisa menerima semua curhatan mahasiswa.
 
 Stars adalah asisten AI untuk desktop Windows dan browser. Stars menyediakan chat teks dan input suara, menggunakan API yang kompatibel dengan format OpenAI Chat Completions. Pesan dikirim ke endpoint yang dikonfigurasi. Versi desktop menyimpan percakapan hanya selama aplikasi berjalan; versi web menyimpannya secara lokal di browser.
 
