@@ -3,13 +3,16 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import math
 import os
+import statistics
 import threading
 import tkinter as tk
 import urllib.error
 import urllib.request
-from tkinter import ttk
+from array import array
 from collections.abc import Callable
+from tkinter import simpledialog, ttk
 
 
 DEFAULT_API_URL = "https://api.openai.com/v1/chat/completions"
@@ -132,8 +135,8 @@ class StarsApp:
         )
         self.mic_button.pack(side="right", anchor="s", padx=(0, 8))
 
-        footer = tk.Frame(self.root, bg="#111831", padx=20, pady=(0, 12))
-        footer.pack(fill="x")
+        footer = tk.Frame(self.root, bg="#111831", padx=20)
+        footer.pack(fill="x", pady=(0, 12))
         self.status = tk.Label(
             footer,
             text="Ctrl+Enter: kirim  |  Ctrl+Shift+S: nyalakan/matikan mikrofon",
@@ -164,13 +167,16 @@ class StarsApp:
         if self.busy:
             return
         if not self.api_key:
-            self._append_message(
-                "Stars",
-                "API key belum diatur. Ikuti langkah konfigurasi di README.md, lalu buka ulang aplikasi.",
-                "error",
+            api_key = simpledialog.askstring(
+                "API key diperlukan",
+                "Masukkan API key OpenAI Anda. Key hanya disimpan selama aplikasi terbuka:",
+                parent=self.root,
+                show="*",
             )
-            self._set_status("OPENAI_API_KEY belum diatur.")
-            return
+            if not api_key or not api_key.strip():
+                self._set_status("API key diperlukan untuk mengirim pesan.")
+                return
+            self.api_key = api_key.strip()
 
         self.input.delete("1.0", "end")
         self._append_message("Kamu", text, "user")
@@ -195,23 +201,47 @@ class StarsApp:
     def _listen_loop(self) -> None:
         try:
             sr = importlib.import_module("speech_recognition")
+            sounddevice = importlib.import_module("sounddevice")
         except ImportError:
             self._schedule_ui(self._voice_setup_error)
             return
 
         recognizer = sr.Recognizer()
+        sample_rate = 16000
+        block_size = 1600
         try:
-            with sr.Microphone() as source:
-                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            with sounddevice.RawInputStream(
+                samplerate=sample_rate,
+                channels=1,
+                dtype="int16",
+                blocksize=block_size,
+            ) as source:
+                noise_levels = []
+                for _ in range(5):
+                    audio, _ = source.read(block_size)
+                    noise_levels.append(self._audio_level(audio))
+                speech_threshold = max(450, statistics.median(noise_levels) * 2.5)
                 self._schedule_ui(self._set_status, "Mikrofon aktif. Silakan bicara.")
                 while self.listening and not self.stop_event.is_set():
-                    try:
-                        audio = recognizer.listen(source, timeout=1, phrase_time_limit=12)
-                    except sr.WaitTimeoutError:
+                    audio, _ = source.read(block_size)
+                    if self._audio_level(audio) < speech_threshold:
                         continue
 
+                    phrase = [audio]
+                    silence_blocks = 0
+                    for _ in range(int(sample_rate / block_size * 12)):
+                        audio, _ = source.read(block_size)
+                        phrase.append(audio)
+                        if self._audio_level(audio) < speech_threshold:
+                            silence_blocks += 1
+                            if silence_blocks >= 10:
+                                break
+                        else:
+                            silence_blocks = 0
+
+                    audio_data = sr.AudioData(b"".join(phrase), sample_rate, 2)
                     try:
-                        transcript = recognizer.recognize_google(audio, language="id-ID")
+                        transcript = recognizer.recognize_google(audio_data, language="id-ID")
                     except sr.UnknownValueError:
                         self._schedule_ui(self._set_status, "Ucapan belum terdengar jelas. Silakan coba lagi.")
                         continue
@@ -223,12 +253,19 @@ class StarsApp:
                         continue
 
                     self._schedule_ui(self._handle_voice_text, transcript)
-        except (OSError, AttributeError) as error:
+        except (OSError, AttributeError, sounddevice.PortAudioError) as error:
             self._schedule_ui(self._voice_device_error, str(error))
         finally:
             self.listening = False
             if not self.closing:
                 self._schedule_ui(self._on_listening_stopped)
+
+    @staticmethod
+    def _audio_level(frame: bytes) -> float:
+        samples = array("h", frame)
+        if not samples:
+            return 0
+        return math.sqrt(sum(sample * sample for sample in samples) / len(samples))
 
     def _handle_voice_text(self, text: str) -> None:
         if self.busy:

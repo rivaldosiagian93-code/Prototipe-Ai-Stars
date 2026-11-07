@@ -7,20 +7,20 @@ Stars adalah asisten AI untuk desktop Windows dan browser. Stars menyediakan cha
 ## Persiapan
 
 1. Pasang Python 3.10 atau lebih baru dan pastikan opsi **Add Python to PATH** aktif.
-2. Buka PowerShell di folder proyek dan pasang dependensi:
+2. Klik dua kali shortcut **Stars** di Desktop. Launcher akan membuat lingkungan Python proyek dan memasang dependensi mikrofon saat pertama kali dijalankan. Untuk memasangnya manual:
 
    ```powershell
-   python -m pip install -r requirements.txt
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
    ```
 
-3. Siapkan API key dari penyedia AI yang endpoint-nya kompatibel dengan format OpenAI. Agar shortcut bisa menggunakannya, atur variabel pengguna `OPENAI_API_KEY` melalui Windows: cari **Edit environment variables for your account**, pilih **New**, lalu isi nama `OPENAI_API_KEY` dan nilai API key. Tutup dan buka kembali aplikasi setelah mengaturnya.
+3. Saat mengirim ucapan atau pesan pertama kali, masukkan API key OpenAI pada dialog. Key hanya disimpan di memori selama aplikasi terbuka. Alternatifnya, atur environment variable `OPENAI_API_KEY` sebelum menjalankan shortcut.
 
 ## Versi desktop
 
 Jalankan aplikasi desktop dengan mikrofon aktif:
 
 ```powershell
-python .\Stars.py --listen
+.\.venv\Scripts\python.exe .\Stars.py --listen
 ```
 
 Atau klik dua kali `Jalankan Stars.bat`. Aplikasi juga memiliki tombol **Mulai bicara** untuk menyalakan atau mematikan mikrofon. Beri izin akses mikrofon kepada aplikasi jika Windows memintanya.
@@ -48,7 +48,7 @@ Versi web mendukung chat teks di browser, dukungan mikrofon bawaan browser jika 
 
 Tampilan web menyediakan daftar chat, chat baru, dan penghapusan chat. Riwayat disimpan di `localStorage` browser pada perangkat yang digunakan; riwayat tidak disimpan di server dan tidak tersinkron ke perangkat lain. Gunakan browser yang sama untuk membukanya kembali.
 
-Orb bintang pada halaman mengikuti gerakan kursor. Klik **Aktifkan suara** sekali untuk mendengar sapaan Stars dan mengaktifkan pembacaan jawaban. Suara menggunakan fitur text-to-speech bawaan browser/perangkat dengan bahasa Indonesia jika tersedia; karakter suara dan kualitasnya tergantung suara yang terpasang, bukan suara Siri.
+Avatar Stars dan latar belakang web menggunakan video `static/stars-avatar.mp4`. File ini harus disertakan saat menyalin atau menjalankan proyek. Ikon chat menggunakan lambang bintang. Klik **Aktifkan suara** sekali untuk mendengar sapaan Stars dan mengaktifkan pembacaan jawaban. Suara menggunakan fitur text-to-speech bawaan browser/perangkat dengan bahasa Indonesia jika tersedia; karakter suara dan kualitasnya tergantung suara yang terpasang, bukan suara Siri.
 
 ## Deploy ke VPS/hosting dengan Docker
 

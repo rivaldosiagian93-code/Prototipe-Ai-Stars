@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements-web.txt
 
 COPY web_app.py .
 COPY templates ./templates
+COPY static ./static
 
 USER 10001:10001
 EXPOSE 8000
